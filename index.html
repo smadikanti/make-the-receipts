@@ -205,6 +205,34 @@ a:hover { border-bottom-color: var(--orange); }
 .footer p { margin: 6px 0; color: rgba(241, 233, 210, 0.55); }
 .footer a { color: var(--orange); }
 
+/* ── Live counter pill ─────────────────────────────────────────────── */
+.live-count-row { text-align: center; margin: 12px 0 0; min-height: 24px; }
+.live-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 12px 4px 10px;
+  border-radius: 999px;
+  background: rgba(213, 138, 74, 0.10);
+  border: 1px solid rgba(213, 138, 74, 0.32);
+  color: var(--orange);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  opacity: 0;
+  transition: opacity .35s ease;
+}
+.live-count.show { opacity: 1; }
+.live-count .dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--orange);
+  box-shadow: 0 0 8px rgba(213, 138, 74, 0.7);
+  animation: livepulse 1.6s ease-in-out infinite;
+}
+@keyframes livepulse { 50% { opacity: 0.4; } }
+
 /* ── Kit CTA ───────────────────────────────────────────────────────── */
 .kit-cta {
   display: flex;
@@ -312,6 +340,7 @@ a:hover { border-bottom-color: var(--orange); }
 
   <h1 class="brand">the receipts.</h1>
   <p class="tag">build your own — from your own texts.</p>
+  <div class="live-count-row"><span class="live-count" id="live-count" hidden><span class="dot"></span><span id="live-count-num">…</span>&nbsp;builders</span></div>
 
   <div class="preview">
     <div class="preview-card">
@@ -533,6 +562,20 @@ opencode</code></pre>
 </div>
 
 <script>
+// Live visitor counter
+(async () => {
+  try {
+    const r = await fetch("/api/count", { cache: "no-store" });
+    const d = await r.json();
+    if (typeof d.count === "number") {
+      const pill = document.getElementById("live-count");
+      document.getElementById("live-count-num").textContent = d.count.toLocaleString();
+      pill.hidden = false;
+      requestAnimationFrame(() => pill.classList.add("show"));
+    }
+  } catch {}
+})();
+
 document.getElementById("copy-prompt").addEventListener("click", async (e) => {
   const text = document.getElementById("prompt-text").innerText;
   try {
