@@ -1,0 +1,552 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<meta name="description" content="Build your own 5-card text-history receipts site, like Austin's wedding site, from your iMessage or WhatsApp history. Runs on your laptop. No upload, no service." />
+<title>the receipts — diy guide</title>
+<style>
+:root {
+  --paper: #F1E9D2;
+  --ink-soft: rgba(241, 233, 210, 0.55);
+  --ink-soft-2: rgba(241, 233, 210, 0.78);
+  --sage: #6F7E5B;
+  --sage-deep: #4D5A3F;
+  --orange: #D58A4A;
+  --bg: #0a0a0a;
+  --code-bg: rgba(255, 255, 255, 0.05);
+  --line: rgba(255, 255, 255, 0.12);
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--paper);
+  font-family: -apple-system, system-ui, 'Segoe UI', Roboto, sans-serif;
+  font-size: 15px;
+  line-height: 1.6;
+  padding: 56px 24px 80px;
+  -webkit-font-smoothing: antialiased;
+}
+.wrap { max-width: 720px; margin: 0 auto; }
+
+.brand {
+  font-family: 'Snell Roundhand', 'Apple Chancery', 'Brush Script MT', 'Lucida Calligraphy', cursive;
+  font-size: 64px;
+  font-weight: 700;
+  text-align: center;
+  margin: 0 0 4px;
+  line-height: 1;
+}
+.tag {
+  text-align: center;
+  color: var(--ink-soft);
+  margin: 0;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+}
+
+.intro {
+  margin: 32px 0 12px;
+  color: var(--ink-soft-2);
+}
+.intro a { color: var(--orange); text-decoration: none; border-bottom: 1px dotted; }
+
+h2 {
+  font-family: 'Snell Roundhand', 'Apple Chancery', 'Brush Script MT', cursive;
+  font-size: 36px;
+  font-weight: 700;
+  margin: 56px 0 12px;
+  line-height: 1.1;
+}
+h3 {
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(241, 233, 210, 0.7);
+  font-weight: 600;
+  margin: 28px 0 8px;
+}
+p, li { color: var(--ink-soft-2); }
+strong { color: var(--paper); font-weight: 600; }
+
+code, pre {
+  font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  font-size: 13px;
+}
+code {
+  background: var(--code-bg);
+  padding: 1px 6px;
+  border-radius: 3px;
+  color: var(--paper);
+}
+pre {
+  background: var(--code-bg);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+  padding: 14px 16px;
+  overflow-x: auto;
+  margin: 8px 0 12px;
+  line-height: 1.55;
+}
+pre code {
+  background: none;
+  padding: 0;
+  font-size: 13px;
+}
+
+ul, ol { padding-left: 22px; margin: 8px 0; }
+li { margin: 4px 0; }
+
+a { color: var(--orange); text-decoration: none; border-bottom: 1px dotted rgba(213, 138, 74, 0.5); }
+a:hover { border-bottom-color: var(--orange); }
+
+/* ── Tabs (CSS-only) ───────────────────────────────────────────────── */
+.tabs-container input[type=radio] { display: none; }
+.tabs {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid var(--line);
+  margin-top: 16px;
+}
+.tabs label {
+  padding: 10px 18px;
+  font-size: 13px;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  color: rgba(241, 233, 210, 0.5);
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  transition: color .15s, border-color .15s;
+}
+.tabs label:hover { color: rgba(241, 233, 210, 0.85); }
+.tabs-container input#m:checked ~ .tabs label[for=m],
+.tabs-container input#w:checked ~ .tabs label[for=w],
+.tabs-container input#l:checked ~ .tabs label[for=l] {
+  color: var(--paper);
+  border-color: var(--orange);
+}
+.panel { display: none; padding: 16px 0 0; }
+.tabs-container input#m:checked ~ .panels #pm,
+.tabs-container input#w:checked ~ .panels #pw,
+.tabs-container input#l:checked ~ .panels #pl { display: block; }
+
+/* ── The prompt block ──────────────────────────────────────────────── */
+.prompt {
+  background: rgba(213, 138, 74, 0.08);
+  border-left: 3px solid var(--orange);
+  padding: 14px 16px;
+  border-radius: 0 6px 6px 0;
+  margin: 12px 0;
+  font-size: 13px;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  color: rgba(241, 233, 210, 0.92);
+}
+
+.copy-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: -6px;
+  margin-bottom: 14px;
+}
+.copy-row button {
+  background: transparent;
+  color: rgba(241, 233, 210, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 999px;
+  padding: 4px 12px;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  font-family: inherit;
+}
+.copy-row button:hover { color: var(--paper); border-color: var(--orange); }
+.copy-row button.copied { color: var(--orange); border-color: var(--orange); }
+
+/* ── Callouts ──────────────────────────────────────────────────────── */
+.callout {
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 8px;
+  padding: 16px 20px;
+  margin: 16px 0;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+.callout h3 { margin-top: 0; }
+
+.privacy {
+  border: 1px solid rgba(111, 126, 91, 0.35);
+  background: rgba(111, 126, 91, 0.10);
+  padding: 18px 22px;
+  border-radius: 8px;
+  margin: 16px 0;
+  font-size: 13px;
+}
+.privacy strong { color: var(--paper); }
+
+/* ── Footer ────────────────────────────────────────────────────────── */
+.footer {
+  margin-top: 80px;
+  text-align: center;
+  font-size: 13px;
+  color: rgba(241, 233, 210, 0.5);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding-top: 36px;
+}
+.footer .love {
+  font-family: 'Snell Roundhand', 'Apple Chancery', 'Brush Script MT', cursive;
+  font-size: 32px;
+  color: var(--paper);
+  margin-bottom: 8px;
+  line-height: 1;
+}
+.footer p { margin: 6px 0; color: rgba(241, 233, 210, 0.55); }
+.footer a { color: var(--orange); }
+
+/* ── Kit CTA ───────────────────────────────────────────────────────── */
+.kit-cta {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  background: rgba(213, 138, 74, 0.08);
+  border: 1px solid rgba(213, 138, 74, 0.35);
+  border-radius: 10px;
+  padding: 18px 22px;
+  margin: 24px 0 8px;
+}
+.kit-cta .copy { flex: 1; font-size: 13px; color: rgba(241, 233, 210, 0.78); line-height: 1.5; }
+.kit-cta .copy strong { color: var(--paper); display: block; margin-bottom: 4px; font-size: 14px; }
+.kit-cta a.btn {
+  background: var(--orange);
+  color: #1a1a1a;
+  font-weight: 600;
+  padding: 10px 20px;
+  border-radius: 999px;
+  text-decoration: none;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  border-bottom: none;
+}
+.kit-cta a.btn:hover { background: #C97A3D; border-bottom: none; }
+@media (max-width: 540px) {
+  .kit-cta { flex-direction: column; align-items: stretch; text-align: center; }
+}
+
+/* ── Mini receipt preview ──────────────────────────────────────────── */
+.preview {
+  display: flex;
+  justify-content: center;
+  margin: 32px 0 8px;
+}
+.preview-card {
+  background: var(--paper);
+  color: #2F3A2A;
+  border-radius: 10px;
+  padding: 24px 22px 18px;
+  width: 240px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+  position: relative;
+  border: 1.2px solid var(--sage);
+}
+.preview-card::after {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border: 1.2px solid var(--sage);
+  border-radius: 12px;
+  pointer-events: none;
+}
+.preview-card .pe {
+  font-size: 9px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: rgba(47, 58, 42, 0.65);
+}
+.preview-card .ph {
+  font-family: 'Snell Roundhand', 'Apple Chancery', cursive;
+  font-size: 28px;
+  color: var(--sage-deep);
+  margin: 2px 0 12px;
+  line-height: 1;
+}
+.preview-card .pgrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+.preview-card .pgrid div {
+  border: 1px solid var(--sage);
+  border-radius: 3px;
+  padding: 8px 4px;
+  text-align: center;
+}
+.preview-card .pgrid .n {
+  font-family: 'Snell Roundhand', cursive;
+  font-size: 20px;
+  color: var(--sage-deep);
+  font-weight: 700;
+  line-height: 1;
+}
+.preview-card .pgrid .l {
+  font-size: 7px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(47, 58, 42, 0.65);
+  margin-top: 3px;
+}
+
+@media (max-width: 540px) {
+  body { padding: 32px 18px 60px; font-size: 14px; }
+  .brand { font-size: 52px; }
+  h2 { font-size: 30px; }
+  pre { font-size: 12px; padding: 12px; }
+  .prompt { font-size: 12px; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1 class="brand">the receipts.</h1>
+  <p class="tag">build your own — from your own texts.</p>
+
+  <div class="preview">
+    <div class="preview-card">
+      <div class="pe">By the numbers</div>
+      <div class="ph">The receipts.</div>
+      <div class="pgrid">
+        <div><div class="n">11,577</div><div class="l">Messages</div></div>
+        <div><div class="n">102</div><div class="l">Days</div></div>
+        <div><div class="n">1,248</div><div class="l">Photos</div></div>
+        <div><div class="n">105</div><div class="l">'Love you's</div></div>
+      </div>
+    </div>
+  </div>
+
+  <p class="intro">
+    A 5-card site like <a href="https://x.com/helloitsaustin/status/2051792721871004002" target="_blank" rel="noopener">Austin's wedding receipts</a>, built from your own iMessage or WhatsApp history. Runs entirely on your laptop. Your messages never leave your machine.
+    <br /><br />
+    Roughly 30 minutes start to finish. Free with a Claude Code trial. Free forever with Ollama.
+    <br /><br />
+    <strong>Don't want to touch a terminal?</strong> The same thing, drag-drop in your browser: <a href="https://chat-receipts.vercel.app" target="_blank" rel="noopener">chat-receipts.vercel.app →</a>
+  </p>
+
+  <div class="kit-cta">
+    <div class="copy">
+      <strong>Grab the starter kit (1.5 MB)</strong>
+      Includes the prompt and 4 reference images of Austin's cards. Drop your chat file in the unzipped folder, run <code>claude</code>, and paste the prompt. Done.
+    </div>
+    <a class="btn" href="/the-receipts-kit.zip" download>Download kit</a>
+  </div>
+
+  <h2>What you need</h2>
+  <ul>
+    <li><strong>30 minutes.</strong></li>
+    <li><strong>A laptop</strong> — macOS, Windows, or Linux. (iMessage requires a Mac. WhatsApp works anywhere.)</li>
+    <li><strong>Either</strong> Claude Code (free trial works) <strong>or</strong> Ollama with a 14B local model.</li>
+    <li><strong>Your chat history</strong> — exported using the steps below.</li>
+  </ul>
+
+  <h2>Step-by-step</h2>
+
+  <div class="tabs-container">
+    <input type="radio" name="os" id="m" checked />
+    <input type="radio" name="os" id="w" />
+    <input type="radio" name="os" id="l" />
+    <div class="tabs">
+      <label for="m">macOS</label>
+      <label for="w">Windows</label>
+      <label for="l">Linux</label>
+    </div>
+    <div class="panels">
+
+      <!-- ── macOS ─────────────────────────────────────────────────── -->
+      <div class="panel" id="pm">
+
+        <h3>1. Install Claude Code</h3>
+        <pre><code>npm install -g @anthropic-ai/claude-code
+claude</code></pre>
+        <p>If you don't have Node yet: <a href="https://nodejs.org" target="_blank" rel="noopener">install Node.js</a> first (the LTS download is fine). On the first run, <code>claude</code> will guide you through login — a free trial works.</p>
+
+        <h3>2. Get your chat history</h3>
+        <p><strong>iMessage</strong> — sign into iCloud + Messages on your Mac (System Settings → Apple ID → iCloud → Messages on iCloud → on). Wait a minute for sync, then:</p>
+        <pre><code>cp ~/Library/Messages/chat.db ~/Desktop/chat.db</code></pre>
+        <p>If permission denied: System Settings → Privacy &amp; Security → Full Disk Access → toggle Terminal on, then re-run.</p>
+
+        <p><strong>WhatsApp</strong> — on your iPhone open the chat → tap the contact name → <strong>Export Chat</strong> → <strong>Without Media</strong> → AirDrop or email the .zip to your Mac.</p>
+
+        <h3>3. Unzip the kit and drop your chat into it</h3>
+        <pre><code>cd ~/Downloads
+unzip the-receipts-kit.zip
+cd the-receipts-kit
+mv ~/Desktop/chat.db .            # or:  mv ~/Downloads/WhatsApp*.zip .
+claude</code></pre>
+        <p>The folder already contains the prompt (<code>prompt.md</code>) and design references (<code>reference/01-receipts.png</code> … <code>04-vocabulary.png</code>). When <code>claude</code> opens, paste the prompt below.</p>
+
+      </div>
+
+      <!-- ── Windows ───────────────────────────────────────────────── -->
+      <div class="panel" id="pw">
+
+        <h3>1. Install Claude Code</h3>
+        <p>In PowerShell:</p>
+        <pre><code>npm install -g @anthropic-ai/claude-code
+claude</code></pre>
+        <p>If <code>npm</code> isn't installed: <a href="https://nodejs.org" target="_blank" rel="noopener">install Node.js</a> first.</p>
+
+        <h3>2. Get your chat history</h3>
+        <p><strong>iMessage</strong> requires a Mac. Skip this one on Windows.</p>
+        <p><strong>WhatsApp</strong> — on your phone, open the chat → contact name (or 3-dots menu on Android) → <strong>Export Chat</strong> → <strong>Without Media</strong> → email yourself or save to OneDrive → download to your PC.</p>
+
+        <h3>3. Unzip the kit and drop your chat into it</h3>
+        <pre><code>cd $HOME\Downloads
+Expand-Archive the-receipts-kit.zip
+cd the-receipts-kit
+move "$HOME\Downloads\WhatsApp*.zip" .
+claude</code></pre>
+
+      </div>
+
+      <!-- ── Linux ─────────────────────────────────────────────────── -->
+      <div class="panel" id="pl">
+
+        <h3>1. Install Claude Code</h3>
+        <pre><code>npm install -g @anthropic-ai/claude-code
+claude</code></pre>
+
+        <h3>2. Get your chat history</h3>
+        <p><strong>iMessage</strong> requires a Mac.</p>
+        <p><strong>WhatsApp</strong> — on phone → chat → menu → <strong>Export Chat</strong> → <strong>Without Media</strong> → transfer the .zip to your machine.</p>
+
+        <h3>3. Unzip the kit and drop your chat into it</h3>
+        <pre><code>cd ~/Downloads
+unzip the-receipts-kit.zip
+cd the-receipts-kit
+mv ~/Downloads/WhatsApp*.zip .
+claude</code></pre>
+
+      </div>
+
+    </div>
+  </div>
+
+  <h3>4. Paste this prompt</h3>
+  <p style="font-size:12px;color:rgba(241,233,210,0.55);margin:0 0 4px">If you downloaded the starter kit, this same prompt is in <code>prompt.md</code> — same content, easier to paste.</p>
+  <div class="copy-row"><button id="copy-prompt" type="button">Copy prompt</button></div>
+  <div class="prompt" id="prompt-text">Read the chat file in this folder (chat.db for iMessage, or unzip the WhatsApp zip and read _chat.txt).
+
+For iMessage: list all chats with at least 50 messages, sorted by message count, and ask me which one to use. For WhatsApp: just use the conversation in the export.
+
+Then build a single self-contained HTML file called receipts.html with 5 swipeable cards:
+
+1. The receipts — hero stats: total messages, days, photos, videos, emojis, "I love you" count, and a sender split bar.
+2. The shape of us — bar chart of messages per week (or per month if dataset is short), with the peak bar highlighted in orange.
+3. Around the clock — 7 weekdays × 24 hours heatmap, shaded by volume, with the peak bucket called out.
+4. The vocabulary — "I love you" count + top 9 emojis grid.
+5. The arc — first message, peak day, peak month, longest unbroken streak.
+
+Match the aesthetic of the reference images in this folder: reference/01-receipts.png, reference/02-shape.png, reference/03-clock.png, reference/04-vocabulary.png. Cream paper background (#F1E9D2), sage green double scalloped border, handwritten cursive titles (Snell Roundhand / Apple Chancery / Brush Script MT / cursive fallback), monospace numbers, small caps labels. Orange accent (#D58A4A) for the peak bar / peak callouts. Dark page background outside the card. Heart icon in the bottom-right of each card. Cards swipeable with arrow keys, click zones, and touch.
+
+Constraints: single HTML file with all data inlined as a JS object. No external CDN. No build step. No telemetry. Works offline. Add a Content-Security-Policy meta tag with connect-src 'none' so the file cannot make network requests.
+
+For "I love you" detection use a regex covering: i love you, i love u, love you, love u, ily, ilu — and add Telugu (premistunna, premistunnanu) or Hindi (pyaar karta hoon, pyaar karti hoon) variants if the chat looks like that language.
+
+Handle iOS 16+ messages where text is NULL and the real body is in attributedBody (binary plist) — decode the NSString payload from those blobs. Use UTC for the day-streak comparison so DST changes don't break the streak. Handle skin-tone modifiers (U+1F3FB–U+1F3FF) and ZWJ sequences in emoji counting.</div>
+
+  <h3>5. Open it</h3>
+  <p>Claude will write the parser, run it, and emit <code>receipts.html</code> in 1–2 minutes.</p>
+  <pre><code># macOS
+open receipts.html
+
+# Windows
+start receipts.html
+
+# Linux
+xdg-open receipts.html</code></pre>
+
+  <h2>Open-source path · Ollama, no Anthropic key</h2>
+
+  <p>Same end product. Runs on a local model. Slower, fully offline, no account needed.</p>
+
+  <h3>Install Ollama</h3>
+  <p>macOS / Linux:</p>
+  <pre><code>curl -fsSL https://ollama.com/install.sh | sh</code></pre>
+  <p>Windows: download the installer from <a href="https://ollama.com" target="_blank" rel="noopener">ollama.com</a>.</p>
+
+  <h3>Pull a coding model</h3>
+  <pre><code>ollama pull qwen2.5-coder:14b      # ~9 GB, best balance
+# or, if you have less RAM:
+ollama pull qwen2.5-coder:7b       # ~4.7 GB
+# or, for stronger code:
+ollama pull deepseek-coder-v2:16b  # ~9 GB</code></pre>
+
+  <h3>Pick a CLI to drive it</h3>
+
+  <p><strong>Option A — Aider</strong> (mature, works everywhere):</p>
+  <pre><code>pip install aider-chat
+cd ~/receipts
+aider --model ollama_chat/qwen2.5-coder:14b</code></pre>
+
+  <p><strong>Option B — opencode</strong> (Claude-Code-style TUI, supports Ollama):</p>
+  <pre><code>npm install -g opencode-ai
+cd ~/receipts
+opencode</code></pre>
+  <p>Inside opencode pick <code>Ollama → qwen2.5-coder:14b</code>.</p>
+
+  <h3>Same prompt as above</h3>
+  <p>Paste the same prompt. A local 14B model takes 1–3 minutes per file vs Claude's seconds. Quality is solid for parsing and stats; for the cursive aesthetic you may need to nudge it once or twice.</p>
+
+  <div class="callout">
+    <h3>Why it works</h3>
+    <p>The actual analysis is dumb math: count messages, group by hour, regex for emojis. The model only writes a parser, runs it, and templates an HTML file — all well within a 14B local model's capability. No agentic acrobatics needed.</p>
+  </div>
+
+  <h2>Privacy</h2>
+  <div class="privacy">
+    <strong>Your messages never leave your machine.</strong>
+    <ul>
+      <li>Claude Code only sends the text you type plus the code it writes — not raw file contents — unless you explicitly attach a file. Even then, you control what goes in.</li>
+      <li>The Ollama path is fully offline. Disconnect your network and verify.</li>
+      <li>The output is a single HTML file. Share as-is, or ask Claude to add a password layer (AES-GCM via WebCrypto) before sharing.</li>
+    </ul>
+  </div>
+
+  <h2>Tips</h2>
+  <ul>
+    <li><strong>iMessage on iOS 16+</strong> stores some message text in <code>attributedBody</code> (a binary plist). If your script is missing messages, ask Claude: "decode <code>attributedBody</code> NSAttributedString blobs."</li>
+    <li><strong>Couples / weddings</strong> — for an Austin-style guest site, ask Claude to add per-year narrative summaries. That's where LLMs really shine.</li>
+    <li><strong>Short datasets</strong> — if you only have months of history, use messages-per-week instead of per-year.</li>
+    <li><strong>Other languages</strong> — for "I love you" in Hindi, Spanish, Telugu, etc., add the phrase variants to the regex. Just ask Claude.</li>
+    <li><strong>WhatsApp Android</strong> — the export format is slightly different (dashes instead of brackets). Claude handles both, but mention it if your output looks empty.</li>
+    <li><strong>Encrypted share</strong> — "Add a password unlock screen using WebCrypto AES-GCM with PBKDF2-derived key. Recipient enters password to view."</li>
+  </ul>
+
+  <div class="footer">
+    <div class="love">made with love · for love.</div>
+    <p>inspired by <a href="https://x.com/helloitsaustin/status/2051792721871004002" target="_blank" rel="noopener">@helloitsaustin</a></p>
+    <p>by <a href="https://x.com/smad_____" target="_blank" rel="noopener">@smad_____</a></p>
+  </div>
+
+</div>
+
+<script>
+document.getElementById("copy-prompt").addEventListener("click", async (e) => {
+  const text = document.getElementById("prompt-text").innerText;
+  try {
+    await navigator.clipboard.writeText(text);
+    e.target.textContent = "Copied";
+    e.target.classList.add("copied");
+    setTimeout(() => {
+      e.target.textContent = "Copy prompt";
+      e.target.classList.remove("copied");
+    }, 1600);
+  } catch {
+    e.target.textContent = "Press ⌘C";
+  }
+});
+</script>
+</body>
+</html>
